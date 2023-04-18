@@ -164,104 +164,6 @@ const PCT_RANGE = 0x2002;
 
 
 /*
-	A ACTUALLY TEST GRAMMAR FOR PARSER
-*/
-
-const test_g = {
-	"Grammar": {type: PET_AND, exps:[
-		{type: PET_ZEROMORE, exp:
-			{type: PET_AND, exps:[
-				{type: PET_OR, exps: [
-					{type: PET_RULE, name: "expression"},
-					{type: PET_RULE, name: "keyword"},
-				]},
-				{type: PET_ZEROMORE, exp:
-					{type: PET_OR, exps:[
-						{type: PET_RULE, name: "newline"},
-						{type: PET_RULE, name: "spacing"},
-					]},
-				},
-			]},
-		},
-		{type: PET_RULE, name: "eof"},
-	]},
-	
-	"expression": {type: PET_OR, exps:[
-		{type: PET_RULE, name: "sum-exp"},
-		{type: PET_RULE, name: "value"},
-	]},
-	
-	"sum-exp": {type: PET_OR, exps:[
-		{type: PET_AND, exps:[
-			{type: PET_RULE, name: "fac-exp"},
-			{type: PET_RULE, name: "sum-opr"},
-			{type: PET_RULE, name: "fac-exp"},
-		]},
-		//{type: PET_RULE, name: "value"},
-	]},
-	
-	"fac-exp": {type: PET_OR, exps:[
-		{type: PET_AND, exps:[
-			{type: PET_RULE, name: "value"},
-			{type: PET_RULE, name: "fac-opr"},
-			{type: PET_RULE, name: "value"},
-		]},
-		{type: PET_RULE, name: "value"},
-	]},
-	
-	"sum-opr": {type: PET_OR, exps:[
-		{type: PET_LITERAL, value: "+"},
-		{type: PET_LITERAL, value: "-"},
-	]},
-	
-	"fac-opr": {type: PET_OR, exps:[
-		{type: PET_LITERAL, value: "*"},
-		{type: PET_LITERAL, value: "/"},
-	]},
-	
-	"value": {type: PET_OR, exps:[
-		{type: PET_RULE, name: "number"},
-		{type: PET_RULE, name: "name"},
-	]},
-	
-	"number": {type: PET_ONEMORE, exp:
-		{type: PET_CLASS, classes: [
-			{type: PCT_RANGE, range: ['0', '9']}
-		]}
-	},
-	
-	"name": {type: PET_ONEMORE, exp:
-		{type: PET_CLASS, classes: [
-			{type: PCT_RANGE, range: ['a', 'z']},
-			{type: PCT_RANGE, range: ['A', 'Z']},
-			{type: PCT_CHAR, chr: '_'}
-		]}
-	},
-	
-	"keyword": {type: PET_OR, exps:[
-		{type: PET_LITERAL, value: "if"},
-		{type: PET_LITERAL, value: "else"},
-		{type: PET_LITERAL, value: "while"},
-		{type: PET_LITERAL, value: "function"},
-	]},
-	
-	"spacing": {type: PET_ZEROMORE, exp:
-		{type: PET_CLASS, classes:[
-			{type: PCT_CHAR, chr: ' '},
-			{type: PCT_CHAR, chr: '\t'},
-		]}, //, ommits:true
-	},
-	
-	"newline": {type: PET_CLASS, classes:[
-		{type: PCT_CHAR, chr: '\n'}
-	]},
-	
-	"eof": {type: PET_NOT, exp:
-		{type: PET_ANY}
-	},
-};
-
-/*
 	THE ACTUAL GRAMMAR FOR PEG
 */
 
@@ -473,7 +375,7 @@ const peg_grammar = {
 	"Pipe": {type: PET_AND, exps:[
 		{type: PET_LITERAL, value:"|"},
 		{type: PET_RULE, name:"Spacing"},
-	]},
+	], ommits:true},
 	
 	"And": {type: PET_AND, exps:[
 		{type: PET_LITERAL, value:"&"},
@@ -503,12 +405,12 @@ const peg_grammar = {
 	"Open": {type: PET_AND, exps:[
 		{type: PET_LITERAL, value:"("},
 		{type: PET_RULE, name:"Spacing"},
-	]},
+	], ommits:true},
 	
 	"Close": {type: PET_AND, exps:[
 		{type: PET_LITERAL, value:")"},
 		{type: PET_RULE, name:"Spacing"},
-	]},
+	], ommits:true},
 	
 	"Dot": {type: PET_AND, exps:[
 		{type: PET_LITERAL, value:"."},
@@ -519,7 +421,7 @@ const peg_grammar = {
 		{type: PET_OR, exps:[
 			{type: PET_RULE, name:"Space"},
 			{type: PET_RULE, name:"Comment"},
-		]}
+		]}, ommits:true
 	},
 	
 	"Comment": {type: PET_AND, exps:[
@@ -533,22 +435,22 @@ const peg_grammar = {
 			]}
 		},
 		{type: PET_RULE, name:"EndOfLine"},
-	]},
+	], ommits:true},
 	
 	"Space": {type: PET_OR, exps:[
 		{type: PET_LITERAL, value:" "},
 		{type: PET_LITERAL, value:"\t"},
 		{type: PET_RULE, name:"EndOfLine"},
-	]},
+	], ommits:true},
 	
 	"EndOfLine": {type: PET_OR, exps:[
 		{type: PET_LITERAL, value:"\r\n"},
 		{type: PET_LITERAL, value:"\n"},
 		{type: PET_LITERAL, value:"\r"},
-	]},
+	], ommits:true},
 	
 	"EndOfFile": {type: PET_NOT, exp:
-		{type: PET_ANY}
+		{type: PET_ANY}, ommits:true
 	},
 };
 
