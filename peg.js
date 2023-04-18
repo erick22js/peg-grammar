@@ -54,6 +54,31 @@ function Lexer(src){
 	self.tell = function(){
 		return seek;
 	}
+	
+	self.getLine = function(){
+		var line = 1;
+		
+		for(var i=0; i<seek; i++){
+			var chr = src.charAt(i);
+			if(chr=="\n" || chr=="\r" || chr=="\r\n"){
+				line++;
+			}
+		}
+		return line;
+	}
+	
+	self.getOffset = function(){
+		var offset = 1;
+		
+		for(var i=0; i<seek; i++){
+			var chr = src.charAt(i);
+			offset++;
+			if(chr=="\n" || chr=="\r" || chr=="\r\n"){
+				offset = 1;
+			}
+		}
+		return offset;
+	}
 }
 
 
@@ -79,7 +104,7 @@ function Lexer(src){
 	  e?  #  unary  # Can have or not (optional)
 	  e*  #  unary  # Zero or more
 	  e+  #  unary  # At least one or more
-	  &e  #  unary  # Indicates where the expression fail or if success
+	  &e  #  unary  # Execute but do a backtrack, stores the failing status of expression
 	  !e  #  unary  # Proceds only if the expression do not match
 	e1 e2 # binary  # Sequence of match expressions
 	e1|e2 # binary  # Sequence of alternative match expressions
@@ -168,133 +193,155 @@ const PCT_RANGE = 0x2002;
 */
 
 const peg_grammar = {
-	"Grammar": {type: PET_AND, exps:[
-		{type: PET_RULE, name:"Spacing"},
-		{type: PET_ONEMORE, exp:
-			{type: PET_RULE, name:"Definition"},
-		},
-		{type: PET_RULE, name:"EndOfFile"},
-	]},
-	
-	"Definition": {type: PET_AND, exps:[
-		{type: PET_RULE, name:"Identifier"},
-		{type: PET_RULE, name:"Attrib"},
-		{type: PET_RULE, name:"Expression"},
-	]},
-	
-	"Expression": {type: PET_AND, exps:[
-		{type: PET_RULE, name:"Sequence"},
-		{type: PET_ZEROMORE, exp:
-			{type: PET_AND, exps:[
-				{type: PET_RULE, name:"Pipe"},
-				{type: PET_RULE, name:"Sequence"},
-			]},
-		},
-	]},
-	
-	"Sequence": {type: PET_ONEMORE, exp:
-		{type: PET_RULE, name:"Prefix"},
+	"Grammar": {type: PET_MATCH, exp:
+		{type: PET_AND, exps:[
+			{type: PET_RULE, name:"Spacing"},
+			{type: PET_ONEMORE, exp:
+				{type: PET_RULE, name:"Definition"},
+			},
+			{type: PET_RULE, name:"EndOfFile"},
+		]},
 	},
 	
-	"Prefix": {type: PET_AND, exps:[
-		{type: PET_OPTIONAL, exp:
-			{type: PET_OR, exps:[
-				{type: PET_RULE, name:"And"},
-				{type: PET_RULE, name:"Not"},
-			]}
-		},
-		{type: PET_RULE, name:"Suffix"},
-	]},
-	
-	"Suffix": {type: PET_AND, exps:[
-		{type: PET_RULE, name:"Primary"},
-		{type: PET_OPTIONAL, exp:
-			{type: PET_OR, exps:[
-				{type: PET_RULE, name:"Question"},
-				{type: PET_RULE, name:"Star"},
-				{type: PET_RULE, name:"Plus"},
-			]},
-		},
-	]},
-	
-	"Primary": {type: PET_OR, exps:[
-		{type: PET_AND, exps:[
-			{type: PET_RULE, name:"Identifier"},
-			{type: PET_NOT, exp:
+	"Definition": {type: PET_MATCH, exp:
+			{type: PET_AND, exps:[
+				{type: PET_RULE, name:"Identifier"},
 				{type: PET_RULE, name:"Attrib"},
+				{type: PET_RULE, name:"Expression"},
+		]},
+	},
+	
+	"Expression": {type: PET_MATCH, exp:
+		{type: PET_AND, exps:[
+			{type: PET_RULE, name:"Sequence"},
+			{type: PET_ZEROMORE, exp:
+				{type: PET_AND, exps:[
+					{type: PET_RULE, name:"Pipe"},
+					{type: PET_RULE, name:"Sequence"},
+				]},
 			},
 		]},
-		{type: PET_AND, exps:[
-			{type: PET_RULE, name:"Open"},
-			{type: PET_RULE, name:"Expression"},
-			{type: PET_RULE, name:"Close"},
-		]},
-		{type: PET_RULE, name:"Literal"},
-		{type: PET_RULE, name:"Class"},
-		{type: PET_RULE, name:"Dot"},
-	]},
+	},
 	
-	"Identifier": {type: PET_AND, exps:[
-		{type: PET_RULE, name:"IdentStart"},
-		{type: PET_ZEROMORE, exp:
-			{type: PET_RULE, name:"IdentCont"},
+	"Sequence": {type: PET_MATCH, exp:
+		{type: PET_ONEMORE, exp:
+			{type: PET_RULE, name:"Prefix"},
 		},
-		{type: PET_RULE, name:"Spacing"},
-	]},
+	},
 	
-	"IdentStart": {type: PET_CLASS, classes:[
-		{type: PCT_RANGE, range:['a', 'z']},
-		{type: PCT_RANGE, range:['A', 'Z']},
-		{type: PCT_CHAR, chr:'_'},
-	], ommits:true},
+	"Prefix": {type: PET_MATCH, exp:
+		{type: PET_AND, exps:[
+			{type: PET_OPTIONAL, exp:
+				{type: PET_OR, exps:[
+					{type: PET_RULE, name:"And"},
+					{type: PET_RULE, name:"Not"},
+				]}
+			},
+			{type: PET_RULE, name:"Suffix"},
+		]},
+	},
 	
-	"IdentCont": {type: PET_OR, exps:[
-		{type: PET_RULE, name:"IdentStart"},
+	"Suffix": {type: PET_MATCH, exp:
+		{type: PET_AND, exps:[
+			{type: PET_RULE, name:"Primary"},
+			{type: PET_OPTIONAL, exp:
+				{type: PET_OR, exps:[
+					{type: PET_RULE, name:"Question"},
+					{type: PET_RULE, name:"Star"},
+					{type: PET_RULE, name:"Plus"},
+				]},
+			},
+		]},
+	},
+	
+	"Primary": {type: PET_MATCH, exp:
+		{type: PET_OR, exps:[
+			{type: PET_AND, exps:[
+				{type: PET_RULE, name:"Identifier"},
+				{type: PET_NOT, exp:
+					{type: PET_RULE, name:"Attrib"},
+				},
+			]},
+			{type: PET_AND, exps:[
+				{type: PET_RULE, name:"Open"},
+				{type: PET_RULE, name:"Expression"},
+				{type: PET_RULE, name:"Close"},
+			]},
+			{type: PET_RULE, name:"Literal"},
+			{type: PET_RULE, name:"Class"},
+			{type: PET_RULE, name:"Dot"},
+		]},
+	},
+	
+	"Identifier": {type: PET_MATCH, exp:
+		{type: PET_AND, exps:[
+			{type: PET_RULE, name:"IdentStart"},
+			{type: PET_ZEROMORE, exp:
+				{type: PET_RULE, name:"IdentCont"},
+			},
+			{type: PET_RULE, name:"Spacing"},
+		]},
+	},
+	
+	"IdentStart": {type: PET_MATCH, exp:
 		{type: PET_CLASS, classes:[
-			{type: PCT_RANGE, range:['0', '9']},
-		]},
-	], ommits:true},
+			{type: PCT_RANGE, range:['a', 'z']},
+			{type: PCT_RANGE, range:['A', 'Z']},
+			{type: PCT_CHAR, chr:'_'},
+		]}, ommits:true
+	},
 	
-	"Literal": {type: PET_OR, exps:[
-		{type: PET_AND, exps:[
+	"IdentCont": {type: PET_MATCH, exp:
+		{type: PET_OR, exps:[
+			{type: PET_RULE, name:"IdentStart"},
 			{type: PET_CLASS, classes:[
-				{type: PCT_CHAR, chr:'\''},
+				{type: PCT_RANGE, range:['0', '9']},
 			]},
-			{type: PET_ONEMORE, exp:
-				{type: PET_AND, exps:[
-					{type: PET_NOT, exp:
-						{type: PET_CLASS, classes:[
-							{type: PCT_CHAR, chr:'\''},
-						]}
-					},
-					{type: PET_RULE, name: "Char"},
+		]}, ommits:true
+	},
+	
+	"Literal": {type: PET_MATCH, exp:
+			{type: PET_OR, exps:[
+			{type: PET_AND, exps:[
+				{type: PET_CLASS, classes:[
+					{type: PCT_CHAR, chr:'\''},
 				]},
-			},
-			{type: PET_CLASS, classes:[
-				{type: PCT_CHAR, chr:'\''},
-			]},
-			{type: PET_RULE, name:"Spacing"},
-		]},
-		{type: PET_AND, exps:[
-			{type: PET_CLASS, classes:[
-				{type: PCT_CHAR, chr:'\"'},
-			]},
-			{type: PET_ONEMORE, exp:
-				{type: PET_AND, exps:[
-					{type: PET_NOT, exp:
-						{type: PET_CLASS, classes:[
-							{type: PCT_CHAR, chr:'\"'},
-						]}
-					},
-					{type: PET_RULE, name: "Char"},
+				{type: PET_ONEMORE, exp:
+					{type: PET_AND, exps:[
+						{type: PET_NOT, exp:
+							{type: PET_CLASS, classes:[
+								{type: PCT_CHAR, chr:'\''},
+							]}
+						},
+						{type: PET_RULE, name: "Char"},
+					]},
+				},
+				{type: PET_CLASS, classes:[
+					{type: PCT_CHAR, chr:'\''},
 				]},
-			},
-			{type: PET_CLASS, classes:[
-				{type: PCT_CHAR, chr:'\"'},
+				{type: PET_RULE, name:"Spacing"},
 			]},
-			{type: PET_RULE, name:"Spacing"},
+			{type: PET_AND, exps:[
+				{type: PET_CLASS, classes:[
+					{type: PCT_CHAR, chr:'\"'},
+				]},
+				{type: PET_ONEMORE, exp:
+					{type: PET_AND, exps:[
+						{type: PET_NOT, exp:
+							{type: PET_CLASS, classes:[
+								{type: PCT_CHAR, chr:'\"'},
+							]}
+						},
+						{type: PET_RULE, name: "Char"},
+					]},
+				},
+				{type: PET_CLASS, classes:[
+					{type: PCT_CHAR, chr:'\"'},
+				]},
+				{type: PET_RULE, name:"Spacing"},
+			]},
 		]},
-	]},
+	},
 	
 	"Class": {type: PET_AND, exps:[
 		{type: PET_LITERAL, value:"["},
@@ -518,6 +565,8 @@ function Log(msg){
 var bar = 1024;
 
 function pegParse(grammar, src){
+	var errors = [];
+	var level = 0;
 	var lex = new Lexer(src);
 	
 	/**
@@ -534,16 +583,10 @@ function pegParse(grammar, src){
 	function createResult(name=null){
 		return {"name":name, "match":"", "items":[]};
 	}
-	function replicateResult(result){
-		return {"match":result.match, "items":result.items.concat([])};
-	}
-	function copyResult(dest, src){
-		dest.match = src.match;
-		dest.items = src.items;
-	}
 	function joinResult(base, adder){
-		base.items = base.items.concat(adder.items);
 		base.match += adder.match;
+		base.items = base.items.concat(adder.items);
+		//base.error_trace = base.error_trace.concat(adder.error_trace);
 	}
 	
 	/**
@@ -582,6 +625,7 @@ function pegParse(grammar, src){
 	
 	function parseExp_(exp, lex, result){
 		var ret = lex.tell();
+		level++;
 		
 		switch(exp.type){
 			case PET_LITERAL:{
@@ -725,9 +769,22 @@ function pegParse(grammar, src){
 			case PET_MATCH:{
 				var inexp = exp.exp;
 				var match = matchRes();
-				match = parseExp(inexp, lex, result);
-				/* TODO */
-				return match;
+				var inresult = createResult();
+				if((match = parseExp(inexp, lex, inresult)).valid){
+					joinResult(result, inresult);
+					return match;
+				}
+				else{
+					errors.push({
+						"error": "ERROR",
+						"index": ret,
+						"line": lex.getLine(),
+						"offset": lex.getOffset(),
+						"rule": result.name,
+						"level": level
+					});
+					return matchRes();
+				}
 			}
 			break;
 			case PET_NOT:{
@@ -738,7 +795,7 @@ function pegParse(grammar, src){
 				if(!(match = parseExp(inexp, lex, inresult)).valid){
 					lex.seekSet(ret);
 					Log("the expression gived do not match...ACCEPTED :-)");
-					return matchRes("", 0/*OBS*/, true);
+					return matchRes("", 0, true);
 				}
 				Log("no no no NO! The given expression must NOT be valid :-(");
 				return matchRes();
@@ -799,6 +856,7 @@ function pegParse(grammar, src){
 	function parseExp(exp, lex, result){
 		Log("\n\nBEGIN # Type: "+sym2name(exp.type));
 		var match = parseExp_(exp, lex, result);
+		level--;
 		if(match.valid){
 			Log("ExpMatch: \""+match.str+"\"");
 		}
@@ -834,12 +892,12 @@ function pegParse(grammar, src){
 		grammar[i].gn = i;
 	}
 	
-	var res = createResult();
+	var res = createResult("Grammar");
 	if(parseRule(grammar["Grammar"], lex, res).valid){
 		return res;
 	}
 	else{
-		return "Error";
+		return errors;
 	}
 }
 
