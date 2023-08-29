@@ -1,0 +1,101 @@
+Grammar = SPC EOF
+
+#
+# Expression Symbols
+#
+
+PrimaryExpression = Number | OPENP Expression CLOSEP
+
+Operand = Identifier
+OperandPostfix = Operand
+
+UnaryExpression = PrimaryExpression | Operand
+
+AssignExpression = UnaryExpression '=' Expression
+
+Expression = AssignExpression
+
+
+#
+# Keywords and Predef Symbols
+#
+
+# Execution
+
+IF = 'if' SPC
+ELSE = 'else' SPC
+WHILE = 'while' SPC
+DO = 'do' SPC
+BREAK = 'break' SPC
+CONTINUE = 'continue' SPC
+SWITCH = 'switch' SPC
+CASE = 'case' SPC
+DEFAULT = 'default' SPC
+RETURN = 'return' SPC
+GOTO = 'goto' SPC
+
+# Types
+
+BOOL = '_Bool' SPC
+CHAR = 'char' SPC
+SHORT = 'short' SPC
+INT = 'int' SPC
+LONG = 'long' SPC
+FLOAT = 'float' SPC
+DOUBLE = 'double' SPC
+SIGNED = 'signed' SPC
+UNSIGNED = 'unsigned' SPC
+VOID = 'void' SPC
+STRUCT = 'struct' SPC
+UNION = 'union' SPC
+ENUM = 'enum' SPC
+
+SIZEOF = 'sizeof' SPC
+
+# Classifiers
+
+CONST = 'const' SPC
+VOLATILE = 'volatile' SPC
+STATIC = 'static' SPC
+EXTERN = 'extern' SPC
+STRICT = 'strict' SPC
+REGISTER = 'register' SPC
+INLINE = 'inline' SPC
+TYPEDEF = 'typedef' SPC
+
+
+#
+# Symbol tokens
+#
+
+OPENP = '(' SPC
+CLOSEP = ')' SPC
+
+
+#
+# Terminator Symbols
+#
+
+Identifier = L (L|D)* SPC
+Number = (('0' (O*|'x'H+|'b'B+))|D+) SPC # Decimal Numbers
+
+L = [a-zA-Z_]
+H = [0-9a-zA-Z]
+D = [0-9]
+O = [0-7]
+B = [01]
+
+
+#
+# Space and Comments
+#
+
+SPC :: (SPACE|EOL|CommentInline|CommentMultiline)*
+
+CommentInline :: '//' (!(EOL|EOF) .)* (EOL|EOF)
+CommentMultiline :: '/*' (!('*/') .)* '*/'
+
+SPACE :: (' '|'\t')
+EOL :: '\r\n'|'\n'|'\r'
+EOF :: !.
+

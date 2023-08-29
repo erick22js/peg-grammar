@@ -1,0 +1,90 @@
+# Entry point for grammar
+Grammar = (Expression)* EOF
+
+# Expressions Tree
+Value = Number | String | Operand
+
+OperandRef = Identifier DOT OperandRef | Identifier OPENB Expression CLOSEB | Identifier
+Operand = (OperandRef)*
+
+Expression = Value
+
+# Semantical Tokens
+Identifier = l (l|d)+ EOC
+String = ["] (!(["]|EOF) .)* ["] EOC
+Number = d+ EOC # TODO
+
+# Terminal Tokens and Symbols
+ADD = '+' SPC
+SUB = '-' SPC
+MUL = '*' SPC
+DIV = '/' SPC
+MOD = '%' SPC
+POW = '**' SPC
+
+HASH = '#' SPC
+
+BAND = '&' SPC
+BOR = '|' SPC
+BXOR = '^' SPC
+BNOT = '~' SPC
+SHIFTL = '<<' SPC
+SHIFTR = '>>' SPC
+
+AND = '&&' SPC
+OR = '||' SPC
+NOT = '!' SPC
+
+EQUAL = '==' SPC
+DIFFERENT = '!=' SPC
+IDENTITY = '===' SPC
+GREAT = '>' SPC
+LESS = '<' SPC
+GREATEQUAL = '>=' SPC
+LESSEQUAL = '<=' SPC
+
+DOT = '.' SPC
+COMMA = ',' SPC
+COLON = ':' SPC
+DCOLON = '::' SPC
+SEMICOLON = ';' SPC
+
+OPENP = '(' SPC
+CLOSEP = ')' SPC
+OPENB = '[' SPC
+CLOSEB = ']' SPC
+OPENK = '{' SPC
+CLOSEK = '}' SPC
+
+INC = '++' SPC
+DEC = '--' SPC
+
+SET = '=' SPC
+ADDSET = '+=' SPC
+SUBSET = '-=' SPC
+MULSET = '*=' SPC
+DIVSET = '/=' SPC
+MODSET = '%=' SPC
+POWSET = '**=' SPC
+ANDSET = '&=' SPC
+ORSET = '|=' SPC
+XORSET = '^=' SPC
+
+# Terminal characters
+l :: [a-zA-Z_]
+d :: [0-9]
+h :: [0-9a-fA-F]
+o :: [0-7]
+b :: [01]
+EOC :: !l !d SPC
+
+# Spacing Symbols
+SPC = (SPACE | EOL | COMMENTONELINE | COMMENTMULTILINE)*
+COMMENTONELINE = '//' (!EOL .)* BREAK
+COMMENTMULTILINE = '/*' (!('*/'|EOF) .)* '*/'
+SPACE = ' ' | '\t'
+
+# Others Terminal Symbols
+BREAK = EOL | EOF
+EOL = '\r' | '\n'
+EOF :: !.
